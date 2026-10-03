@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tax Invoice {{ sale.invoice_no }}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10px; color: #111; }
+  h1 { font-size: 16px; margin: 0; }
+  .title { text-align: center; font-size: 13px; font-weight: bold; margin: 8px 0; letter-spacing: 1px; }
+  .row { display: flex; justify-content: space-between; gap: 16px; }
+  .box { border: 1px solid #999; padding: 6px 8px; flex: 1; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { border: 1px solid #999; padding: 4px; }
+  th { background: #f0f0f0; }
+  .num { text-align: right; white-space: nowrap; }
+  .totals td { border: none; padding: 2px 4px; }
+  .grand { font-size: 13px; font-weight: bold; }
+  .muted { color: #555; }
+  .footer { margin-top: 20px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div>
+      <h1>{{ store.name }}</h1>
+      <div>{{ store.address }}</div>
+      {% if store.phone %}<div>Phone: {{ store.phone }}</div>{% endif %}
+      {% if store.gstin %}<div><b>GSTIN:</b> {{ store.gstin }}</div>{% endif %}
+      <div>State: {{ store.state_name }} ({{ store.state_code }})</div>
+    </div>
+    <div style="text-align:right">
+      <div><b>Invoice No:</b> {{ sale.invoice_no }}</div>
+      <div><b>Date:</b> {{ sale.created_at.strftime("%d-%m-%Y %H:%M") }}</div>
+      <div><b>Place of Supply:</b> {{ sale.place_of_supply }}</div>
+      <div><b>Cashier:</b> {{ sale.cashier.name }}</div>
+    </div>
+  </div>
+
+  <div class="title">TAX INVOICE</div>
+
+  <div class="row">
+    <div class="box">
+      <b>Bill To</b><br>
+      {% if sale.customer %}
+        {{ sale.customer.name }}<br>
+        {{ sale.customer.phone }}<br>
+        {% if sale.customer.address %}{{ sale.customer.address }}<br>{% endif %}
+        {% if sale.customer.gstin %}GSTIN: {{ sale.customer.gstin }}{% endif %}
+      {% else %}
+        Walk-in customer
+      {% endif %}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>Item</th><th>HSN</th><th>Qty</th><th class="num">Rate</th>
+        <th class="num">Disc.</th><th class="num">Taxable</th><th class="num">GST %</th>
+        {% if interstate %}<th class="num">IGST</th>{% else %}<th class="num">CGST</th><th class="num">SGST</th>{% endif %}
+        <th class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in sale.items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ i.product_name }}<br><span class="muted">{{ i.size }} / {{ i.color }} · {{ i.sku }}</span></td>
+        <td>{{ i.hsn_code }}</td>
+        <td class="num">{{ i.qty }}</td>
+        <td class="num">{{ i.unit_price | inr }}</td>
+        <td class="num">{{ i.discount | inr }}</td>
+        <td class="num">{{ i.taxable_value | inr }}</td>
+        <td class="num">{{ "%g" % i.gst_rate }}</td>
+        {% if interstate %}<td class="num">{{ i.igst | inr }}</td>{% else %}<td class="num">{{ i.cgst | inr }}</td><td class="num">{{ i.sgst | inr }}</td>{% endif %}
+        <td class="num">{{ i.line_total | inr }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="row" style="margin-top:8px">
+    <div style="flex:1.4">
+      <table>
+        <thead>
+          <tr><th>HSN</th><th class="num">GST %</th><th class="num">Taxable</th>
+          {% if interstate %}<th class="num">IGST</th>{% else %}<th class="num">CGST</th><th class="num">SGST</th>{% endif %}</tr>
+        </thead>
+        <tbody>
+          {% for t in tax_breakup %}
+          <tr><td>{{ t.hsn }}</td><td class="num">{{ "%g" % t.rate }}</td><td class="num">{{ t.taxable | inr }}</td>
+          {% if interstate %}<td class="num">{{ t.igst | inr }}</td>{% else %}<td class="num">{{ t.cgst | inr }}</td><td class="num">{{ t.sgst | inr }}</td>{% endif %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p><b>Amount in words:</b> {{ amount_words }}</p>
+      <p class="muted">Payment:
+        {% for p in sale.payments %}{{ p.method.value | upper }} {{ p.amount | inr }}{% if not loop.last %}, {% endif %}{% endfor %}
+      </p>
+    </div>
+    <div style="flex:1">
+      <table class="totals">
+        <tr><td>Gross amount</td><td class="num">{{ sale.subtotal | inr }}</td></tr>
+        <tr><td>Discount</td><td class="num">- {{ sale.discount | inr }}</td></tr>
+        <tr><td>Taxable value</td><td class="num">{{ sale.taxable_value | inr }}</td></tr>
+        {% if interstate %}
+        <tr><td>IGST</td><td class="num">{{ sale.igst | inr }}</td></tr>
+        {% else %}
+        <tr><td>CGST</td><td class="num">{{ sale.cgst | inr }}</td></tr>
+        <tr><td>SGST</td><td class="num">{{ sale.sgst | inr }}</td></tr>
+        {% endif %}
+        <tr><td>Round off</td><td class="num">{{ sale.round_off | inr }}</td></tr>
+        <tr class="grand"><td>Grand Total (₹)</td><td class="num">{{ sale.grand_total | inr }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="muted" style="max-width:60%">{{ store.footer_terms or "Prices are inclusive of GST." }}</div>
+    <div style="text-align:center; margin-top:30px">For {{ store.name }}<br><br>Authorised Signatory</div>
+  </div>
+</body>
+</html>
