@@ -1,4 +1,5 @@
 from functools import lru_cache
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,13 +31,19 @@ class Settings(BaseSettings):
     @field_validator("database_url", mode="before")
     @classmethod
     def normalize_database_url(cls, value: str) -> str:
-        # Vercel Postgres integration variables use postgres:// or postgresql://;
-        # this project installs psycopg 3, so select that SQLAlchemy driver.
-        if value.startswith("postgres://"):
-            return value.replace("postgres://", "postgresql+psycopg://", 1)
-        if value.startswith("postgresql://"):
-            return value.replace("postgresql://", "postgresql+psycopg://", 1)
-        return value
+        # Vercel's Supabase integration can append `supa` metadata to the URL;
+        # psycopg/libpq treats it as a connection option and rejects it.
+        parts = urlsplit(value)
+        scheme = {
+            "postgres": "postgresql+psycopg",
+            "postgresql": "postgresql+psycopg",
+        }.get(parts.scheme, parts.scheme)
+        query = [
+            (key, item)
+            for key, item in parse_qsl(parts.query, keep_blank_values=True)
+            if key != "supa"
+        ]
+        return urlunsplit(parts._replace(scheme=scheme, query=urlencode(query, doseq=True)))
 
 
 @lru_cache
