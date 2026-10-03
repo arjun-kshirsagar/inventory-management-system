@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Receipt {{ sale.invoice_no }}</title>
+<style>
+  @page { size: 80mm auto; margin: 3mm; }
+  body { font-family: "DejaVu Sans Mono", monospace; font-size: 9px; width: 74mm; }
+  .c { text-align: center; }
+  .r { text-align: right; }
+  hr { border: none; border-top: 1px dashed #000; }
+  table { width: 100%; border-collapse: collapse; }
+  td { vertical-align: top; padding: 1px 0; }
+  .b { font-weight: bold; }
+</style>
+</head>
+<body>
+  <div class="c b">{{ store.name }}</div>
+  <div class="c">{{ store.address }}</div>
+  {% if store.gstin %}<div class="c">GSTIN: {{ store.gstin }}</div>{% endif %}
+  <div class="c b">TAX INVOICE</div>
+  <hr>
+  <div>{{ sale.invoice_no }}<span style="float:right">{{ sale.created_at.strftime("%d-%m-%Y %H:%M") }}</span></div>
+  {% if sale.customer %}<div>{{ sale.customer.name }} · {{ sale.customer.phone }}</div>{% endif %}
+  <hr>
+  <table>
+    {% for i in sale.items %}
+    <tr><td colspan="3">{{ i.product_name }} ({{ i.size }}/{{ i.color }})</td></tr>
+    <tr><td>{{ i.qty }} x {{ i.unit_price | inr }}</td><td>GST {{ "%g" % i.gst_rate }}%</td><td class="r">{{ i.line_total | inr }}</td></tr>
+    {% if i.discount > 0 %}<tr><td colspan="2">  disc</td><td class="r">-{{ i.discount | inr }}</td></tr>{% endif %}
+    {% endfor %}
+  </table>
+  <hr>
+  <table>
+    <tr><td>Taxable</td><td class="r">{{ sale.taxable_value | inr }}</td></tr>
+    {% if interstate %}<tr><td>IGST</td><td class="r">{{ sale.igst | inr }}</td></tr>
+    {% else %}<tr><td>CGST</td><td class="r">{{ sale.cgst | inr }}</td></tr><tr><td>SGST</td><td class="r">{{ sale.sgst | inr }}</td></tr>{% endif %}
+    <tr><td>Round off</td><td class="r">{{ sale.round_off | inr }}</td></tr>
+    <tr class="b"><td>TOTAL ₹</td><td class="r">{{ sale.grand_total | inr }}</td></tr>
+    {% for p in sale.payments %}<tr><td>{{ p.method.value | upper }}</td><td class="r">{{ p.amount | inr }}</td></tr>{% endfor %}
+  </table>
+  <hr>
+  <div class="c">{{ store.footer_terms or "Thank you for shopping with us!" }}</div>
+</body>
+</html>

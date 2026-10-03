@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 8mm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 8px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 2mm; }
+  .label { width: 46mm; height: 30mm; border: 1px dashed #bbb; padding: 1.5mm; box-sizing: border-box; overflow: hidden; }
+  .label svg { width: 100%; height: 14mm; }
+  .name { font-weight: bold; white-space: nowrap; overflow: hidden; }
+  .mrp { font-weight: bold; font-size: 10px; }
+</style>
+</head>
+<body>
+  <div class="grid">
+  {% for l in labels %}
+    <div class="label">
+      <div class="name">{{ l.variant.product.name }}</div>
+      <div>Size {{ l.variant.size }} · {{ l.variant.color }}</div>
+      {{ l.svg }}
+      <div class="mrp">MRP ₹{{ l.variant.mrp | inr }} <span style="font-weight:normal;font-size:7px">(incl. of all taxes)</span></div>
+    </div>
+  {% endfor %}
+  </div>
+</body>
+</html>

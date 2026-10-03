@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Credit Note {{ ret.credit_note_no }}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10px; }
+  h1 { font-size: 16px; margin: 0; }
+  .title { text-align: center; font-size: 13px; font-weight: bold; margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { border: 1px solid #999; padding: 4px; }
+  th { background: #f0f0f0; }
+  .num { text-align: right; }
+</style>
+</head>
+<body>
+  <h1>{{ store.name }}</h1>
+  <div>{{ store.address }}</div>
+  {% if store.gstin %}<div>GSTIN: {{ store.gstin }}</div>{% endif %}
+  <div class="title">CREDIT NOTE</div>
+  <div><b>Credit Note No:</b> {{ ret.credit_note_no }} &nbsp; <b>Date:</b> {{ ret.created_at.strftime("%d-%m-%Y") }}</div>
+  <div><b>Against Invoice:</b> {{ sale.invoice_no }} dated {{ sale.created_at.strftime("%d-%m-%Y") }}</div>
+  {% if sale.customer %}<div><b>Customer:</b> {{ sale.customer.name }} ({{ sale.customer.phone }})</div>{% endif %}
+  {% if ret.reason %}<div><b>Reason:</b> {{ ret.reason }}</div>{% endif %}
+  <table>
+    <thead><tr><th>Item</th><th>HSN</th><th class="num">Qty</th><th class="num">GST %</th><th class="num">Taxable</th><th class="num">Tax</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+    {% for r in ret.items %}
+      <tr>
+        <td>{{ r.sale_item.product_name }} ({{ r.sale_item.size }}/{{ r.sale_item.color }})</td>
+        <td>{{ r.sale_item.hsn_code }}</td>
+        <td class="num">{{ r.qty }}</td>
+        <td class="num">{{ "%g" % r.sale_item.gst_rate }}</td>
+        <td class="num">{{ r.taxable_value | inr }}</td>
+        <td class="num">{{ r.tax | inr }}</td>
+        <td class="num">{{ r.amount | inr }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p>Taxable {{ ret.taxable_value | inr }} · CGST {{ ret.cgst | inr }} · SGST {{ ret.sgst | inr }} · IGST {{ ret.igst | inr }}</p>
+  <p><b>Refund: ₹{{ ret.refund_amount | inr }}</b> ({{ amount_words }})</p>
+</body>
+</html>
