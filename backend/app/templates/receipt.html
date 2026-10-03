@@ -20,7 +20,7 @@
   {% if store.gstin %}<div class="c">GSTIN: {{ store.gstin }}</div>{% endif %}
   <div class="c b">TAX INVOICE</div>
   <hr>
-  <div>{{ sale.invoice_no }}<span style="float:right">{{ sale.created_at.strftime("%d-%m-%Y %H:%M") }}</span></div>
+  <div>{{ sale.invoice_no }}<span style="float:right">{{ sale.created_at | local("%d-%m-%Y %H:%M") }}</span></div>
   {% if sale.customer %}<div>{{ sale.customer.name }} · {{ sale.customer.phone }}</div>{% endif %}
   <hr>
   <table>

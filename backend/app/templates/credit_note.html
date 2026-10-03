@@ -19,8 +19,8 @@
   <div>{{ store.address }}</div>
   {% if store.gstin %}<div>GSTIN: {{ store.gstin }}</div>{% endif %}
   <div class="title">CREDIT NOTE</div>
-  <div><b>Credit Note No:</b> {{ ret.credit_note_no }} &nbsp; <b>Date:</b> {{ ret.created_at.strftime("%d-%m-%Y") }}</div>
-  <div><b>Against Invoice:</b> {{ sale.invoice_no }} dated {{ sale.created_at.strftime("%d-%m-%Y") }}</div>
+  <div><b>Credit Note No:</b> {{ ret.credit_note_no }} &nbsp; <b>Date:</b> {{ ret.created_at | local("%d-%m-%Y") }}</div>
+  <div><b>Against Invoice:</b> {{ sale.invoice_no }} dated {{ sale.created_at | local("%d-%m-%Y") }}</div>
   {% if sale.customer %}<div><b>Customer:</b> {{ sale.customer.name }} ({{ sale.customer.phone }})</div>{% endif %}
   {% if ret.reason %}<div><b>Reason:</b> {{ ret.reason }}</div>{% endif %}
   <table>

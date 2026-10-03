@@ -21,9 +21,9 @@ from app.schemas.sales import (
 )
 from app.services import documents, gst
 from app.services import sales as sales_service
-from app.services.reports import _range
+from app.services.reports import local_range
 from app.services.stock import StockError
-from app.services.store import get_store_settings
+from app.services.store import get_store_settings, store_today
 
 router = APIRouter(tags=["sales"])
 
@@ -117,7 +117,7 @@ def list_sales(
             | Customer.name.ilike(f"%{q}%")
         )
     if start or end:
-        stmt = stmt.where(_range(Sale.created_at, start or date.min, end or date.today()))
+        stmt = stmt.where(local_range(Sale.created_at, start or date.min, end or store_today()))
     if status:
         stmt = stmt.where(Sale.status == status)
     total = db.scalar(select(func.count()).select_from(stmt.subquery()))

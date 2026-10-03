@@ -2,6 +2,7 @@
 
 from io import BytesIO
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import barcode
 from barcode.writer import SVGWriter
@@ -9,6 +10,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 from weasyprint import HTML
 
+from app.core.config import get_settings
 from app.models import ProductVariant, Sale, SaleReturn, StoreSettings
 from app.services.money import amount_in_words
 
@@ -17,6 +19,9 @@ _env = Environment(
     autoescape=select_autoescape(["html"]),
 )
 _env.filters["inr"] = lambda v: f"{v:,.2f}"
+_env.filters["local"] = lambda dt, fmt="%d-%m-%Y %H:%M": dt.astimezone(
+    ZoneInfo(get_settings().store_timezone)
+).strftime(fmt)
 
 
 def _tax_breakup(items) -> list[dict]:
