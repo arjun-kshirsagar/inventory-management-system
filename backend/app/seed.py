@@ -220,7 +220,7 @@ def seed_demo(db, admin: User) -> None:
         ReceiptCreate(
             supplier_id=supplier.id,
             invoice_ref="TT/2026/0457",
-            items=[ReceiptItemIn(variant_id=v.id, qty=rng.randint(6, 20)) for v in variants],
+            items=[ReceiptItemIn(variant_id=v.id, qty=rng.randint(15, 40)) for v in variants],
         ),
         admin.id,
     )

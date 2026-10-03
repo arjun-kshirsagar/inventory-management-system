@@ -23,7 +23,7 @@ from app.services import gst
 from app.services.money import ZERO, q, round_rupee
 from app.services.numbering import next_document_number
 from app.services.stock import StockError, lock_variants, move_stock
-from app.services.store import get_store_settings
+from app.services.store import get_store_settings, store_today
 
 
 class SaleError(Exception):
@@ -156,7 +156,7 @@ def quote_sale(
     if missing:
         raise SaleError(f"Unknown variant id(s): {sorted(missing)}")
     return price_cart(
-        db, lines, variants, _get_customer(db, customer_id), bill_discount, date.today()
+        db, lines, variants, _get_customer(db, customer_id), bill_discount, store_today()
     )
 
 
@@ -171,7 +171,7 @@ def create_sale(db: Session, data: SaleCreate, cashier_id: int) -> Sale:
         lines = _merge_lines(data.items)
         customer = _get_customer(db, data.customer_id)
         variants = lock_variants(db, [ln.variant_id for ln in lines])
-        cart = price_cart(db, lines, variants, customer, data.bill_discount, date.today())
+        cart = price_cart(db, lines, variants, customer, data.bill_discount, store_today())
 
         paid = sum((q(p.amount) for p in data.payments), ZERO)
         if paid != cart.grand_total:
@@ -179,7 +179,7 @@ def create_sale(db: Session, data: SaleCreate, cashier_id: int) -> Sale:
 
         store = get_store_settings(db)
         sale = Sale(
-            invoice_no=next_document_number(db, "invoice", store.invoice_prefix, date.today()),
+            invoice_no=next_document_number(db, "invoice", store.invoice_prefix, store_today()),
             idempotency_key=data.idempotency_key,
             customer_id=customer.id if customer else None,
             cashier_id=cashier_id,
@@ -267,7 +267,7 @@ def create_return(db: Session, sale_id: int, data: ReturnCreate, user_id: int) -
         store = get_store_settings(db)
         sale_return = SaleReturn(
             credit_note_no=next_document_number(
-                db, "credit_note", store.credit_note_prefix, date.today()
+                db, "credit_note", store.credit_note_prefix, store_today()
             ),
             sale_id=sale.id,
             user_id=user_id,

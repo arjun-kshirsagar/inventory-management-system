@@ -38,7 +38,7 @@ def local_date(column):
     return cast(func.timezone(_tz(), column), Date)
 
 
-def _range(column, start: date, end: date):
+def local_range(column, start: date, end: date):
     """Inclusive [start, end] in local dates, as a sargable timestamp range."""
     zone = ZoneInfo(_tz())
     lo = datetime.combine(start, datetime.min.time(), zone)
@@ -63,17 +63,17 @@ def dashboard(db: Session, today: date) -> Row:
         select(
             func.count(Sale.id).label("bills"),
             func.coalesce(func.sum(Sale.grand_total), 0).label("gross"),
-        ).where(_range(Sale.created_at, today, today))
+        ).where(local_range(Sale.created_at, today, today))
     ).one()
     refunds_today = db.scalar(
         select(func.coalesce(func.sum(SaleReturn.refund_amount), 0)).where(
-            _range(SaleReturn.created_at, today, today)
+            local_range(SaleReturn.created_at, today, today)
         )
     )
     items_today = db.scalar(
         select(func.coalesce(func.sum(SaleItem.qty), 0))
         .join(Sale)
-        .where(_range(Sale.created_at, today, today))
+        .where(local_range(Sale.created_at, today, today))
     )
     low_stock = db.scalar(
         select(func.count(ProductVariant.id)).where(
@@ -91,7 +91,7 @@ def dashboard(db: Session, today: date) -> Row:
                 func.count(Sale.id).label("bills"),
                 func.sum(Sale.grand_total).label("total"),
             )
-            .where(_range(Sale.created_at, start, today))
+            .where(local_range(Sale.created_at, start, today))
             .group_by(day)
         )
     }
@@ -146,7 +146,7 @@ def sales_report(db: Session, start: date, end: date, group_by: str) -> Row:
         .outerjoin(Category, Product.category_id == Category.id)
         .outerjoin(Brand, Product.brand_id == Brand.id)
         .join(User, Sale.cashier_id == User.id)
-        .where(_range(Sale.created_at, start, end))
+        .where(local_range(Sale.created_at, start, end))
         .group_by(key)
         .order_by(key if group_by == "day" else func.sum(net_total).desc())
     )
@@ -159,7 +159,7 @@ def sales_report(db: Session, start: date, end: date, group_by: str) -> Row:
                 func.sum(Payment.amount).label("amount"),
             )
             .join(Sale)
-            .where(_range(Sale.created_at, start, end))
+            .where(local_range(Sale.created_at, start, end))
             .group_by(Payment.method)
             .order_by(Payment.method)
         )
@@ -184,7 +184,7 @@ def _variant_sales_subquery(start: date, end: date):
             func.sum(net_total).label("revenue"),
         )
         .join(Sale)
-        .where(_range(Sale.created_at, start, end))
+        .where(local_range(Sale.created_at, start, end))
         .group_by(SaleItem.variant_id)
         .subquery()
     )
@@ -315,7 +315,7 @@ def gst_summary(db: Session, start: date, end: date) -> Row:
                 func.sum(SaleItem.line_total).label("total"),
             )
             .join(Sale)
-            .where(_range(Sale.created_at, start, end))
+            .where(local_range(Sale.created_at, start, end))
             .group_by(SaleItem.hsn_code, SaleItem.gst_rate)
             .order_by(SaleItem.hsn_code, SaleItem.gst_rate)
         )
@@ -333,7 +333,7 @@ def gst_summary(db: Session, start: date, end: date) -> Row:
             .select_from(SaleReturnItem)
             .join(SaleReturn, SaleReturnItem.return_id == SaleReturn.id)
             .join(SaleItem, SaleReturnItem.sale_item_id == SaleItem.id)
-            .where(_range(SaleReturn.created_at, start, end))
+            .where(local_range(SaleReturn.created_at, start, end))
             .group_by(SaleItem.hsn_code, SaleItem.gst_rate)
             .order_by(SaleItem.hsn_code, SaleItem.gst_rate)
         )
@@ -346,7 +346,7 @@ def gst_summary(db: Session, start: date, end: date) -> Row:
                 func.sum(Sale.taxable_value).label("taxable_value"),
                 func.sum(Sale.cgst + Sale.sgst + Sale.igst).label("tax"),
             )
-            .where(_range(Sale.created_at, start, end))
+            .where(local_range(Sale.created_at, start, end))
             .group_by(interstate)
         )
     )
@@ -364,7 +364,7 @@ def profit(db: Session, start: date, end: date) -> Row:
                 func.sum(net_cogs).label("cogs"),
             )
             .join(Sale)
-            .where(_range(Sale.created_at, start, end))
+            .where(local_range(Sale.created_at, start, end))
             .group_by(day)
             .order_by(day)
         )

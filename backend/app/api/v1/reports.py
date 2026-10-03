@@ -1,23 +1,21 @@
 import csv
 import io
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 
-from app.core.config import get_settings
 from app.core.deps import DB, AdminUser
 from app.services import reports
 from app.services.money import q
+from app.services.store import store_today
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 
-def _today() -> date:
-    return datetime.now(ZoneInfo(get_settings().store_timezone)).date()
+_today = store_today
 
 
 def _dates(start: date | None, end: date | None) -> tuple[date, date]:

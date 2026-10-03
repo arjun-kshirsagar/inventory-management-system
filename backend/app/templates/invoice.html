@@ -31,7 +31,7 @@
     </div>
     <div style="text-align:right">
       <div><b>Invoice No:</b> {{ sale.invoice_no }}</div>
-      <div><b>Date:</b> {{ sale.created_at.strftime("%d-%m-%Y %H:%M") }}</div>
+      <div><b>Date:</b> {{ sale.created_at | local("%d-%m-%Y %H:%M") }}</div>
       <div><b>Place of Supply:</b> {{ sale.place_of_supply }}</div>
       <div><b>Cashier:</b> {{ sale.cashier.name }}</div>
     </div>
